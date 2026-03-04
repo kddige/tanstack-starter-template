@@ -17,9 +17,11 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "auth:generate": "bunx @better-auth/cli@latest generate --output src/db/auth-schema.ts -y"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "^1.5.3",
     "@orpc/client": "^1.13.0",
     "@orpc/json-schema": "^1.13.0",
     "@orpc/openapi": "^1.13.0",
