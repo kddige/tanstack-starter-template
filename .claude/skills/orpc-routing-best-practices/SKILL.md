@@ -1,6 +1,6 @@
 ---
 name: orpc-routing-best-practices
-description: This skill provides guidance and enforcement rules for defining oRPC routes with proper HTTP routing, path parameters, and input/output structure for OpenAPI spec generation.
+description: This skill provides guidance and enforcement rules for defining oRPC routes with proper HTTP routing, path parameters, and input/output structure for OpenAPI spec generation. ALWAYS USE WHEN WORKING WITH oRPC ROUTING!
 ---
 
 # oRPC Routing & Input/Output Structure Guide
@@ -100,6 +100,7 @@ os.route({
   path: '/planets/{name}',
   method: 'POST',
   inputStructure: 'detailed',
+  tags: ['Planets'],
 }).input(
   z.object({
     params: z.object({ name: z.string().describe('Planet name') }),

@@ -89,3 +89,11 @@ queryClient.setQueryData(
   updatedData,
 )
 ```
+
+## Database setup
+ORM is Drizzle. Write all schemas in `src/db/schema.ts` and run migrations with `bun run db:migrate`.
+
+When changing auth options, or extending the better auth instance run `bun run auth:generate` to regenerate the better-auth auth-schema.ts
+
+## oRPC routing
+When working with oRPC routing ALWAYS use the [orpc-routing-best-practices] skill! MANDATORY for all oRPC routing work.
