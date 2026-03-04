@@ -97,7 +97,16 @@ queryClient.setQueryData(
 When working with oRPC routing ALWAYS use the [orpc-routing-best-practices] skill! MANDATORY for all oRPC routing work.
 
 # Database setup
-ORM is Drizzle. Write all schemas in `src/db/schema.ts` and run migrations with `bun run db:migrate`.
+ORM is Drizzle. Write all schemas in `src/db/schema.ts`.
+
+**After any schema change, always generate and use migrations** — never use `db:push` for production-bound changes. Migrations ensure data is transformed correctly when applied in production environments.
+
+1. Modify `src/db/schema.ts`
+2. Run `bun run db:generate` to create a migration file
+3. Review the generated SQL in `drizzle/` for correctness (especially for column renames, type changes, or data-loss-prone operations)
+4. Run `bun run db:migrate` to apply
+
+Use `bun run db:push` only for rapid local prototyping where data loss is acceptable.
 
 When changing auth options, or extending the better auth instance run `bun run auth:generate` to regenerate the better-auth auth-schema.ts
 
