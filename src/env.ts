@@ -1,9 +1,24 @@
 import { createEnv } from '@t3-oss/env-core'
 import { z } from 'zod'
 
+/**
+ * Validated environment variables for the application.
+ * All env var access should go through this object to ensure
+ * runtime validation via `@t3-oss/env-core`.
+ *
+ * @example
+ * ```ts
+ * import { env } from '@/env'
+ *
+ * const dbUrl = env.DATABASE_URL
+ * ```
+ */
 export const env = createEnv({
   server: {
-    SERVER_URL: z.string().url().optional(),
+    SERVER_URL: z.url().optional(),
+    DATABASE_URL: z.url(),
+    BETTER_AUTH_SECRET: z.string().min(1),
+    BETTER_AUTH_URL: z.url(),
   },
 
   /**
