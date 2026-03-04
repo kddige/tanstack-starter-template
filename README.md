@@ -39,15 +39,23 @@ bunx --bun @better-auth/cli secret
 DATABASE_URL="postgresql://username:password@localhost:5432/mydb"
 ```
 
-### 3. Set up database
+### 3. Start PostgreSQL
+
+A `docker-compose.yml` is included with a PostgreSQL instance matching the default `.env.example` connection string.
 
 ```bash
-bun run db:push    # Push schema to database
-# or
-bun run db:migrate # Run migrations
+docker compose up -d
 ```
 
-### 4. Start developing
+### 4. Set up database
+
+```bash
+bun run db:push    # Push schema to database (local dev)
+# or
+bun run db:migrate # Run migrations (production)
+```
+
+### 5. Start developing
 
 ```bash
 bun run dev
@@ -57,20 +65,20 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Scripts
 
-| Script | Description |
-|-|-|
-| `bun run dev` | Start dev server on port 3000 |
-| `bun run build` | Production build |
-| `bun run preview` | Preview production build |
-| `bun run test` | Run tests with Vitest |
-| `bun run lint` | Lint with ESLint |
-| `bun run format` | Check formatting with Prettier |
-| `bun run check` | Fix formatting + lint |
-| `bun run db:generate` | Generate Drizzle migrations |
-| `bun run db:migrate` | Run Drizzle migrations |
-| `bun run db:push` | Push schema directly to database |
-| `bun run db:studio` | Open Drizzle Studio |
-| `bun run auth:generate` | Regenerate Better Auth schema |
+| Script                  | Description                      |
+| ----------------------- | -------------------------------- |
+| `bun run dev`           | Start dev server on port 3000    |
+| `bun run build`         | Production build                 |
+| `bun run preview`       | Preview production build         |
+| `bun run test`          | Run tests with Vitest            |
+| `bun run lint`          | Lint with ESLint                 |
+| `bun run format`        | Check formatting with Prettier   |
+| `bun run check`         | Fix formatting + lint            |
+| `bun run db:generate`   | Generate Drizzle migrations      |
+| `bun run db:migrate`    | Run Drizzle migrations           |
+| `bun run db:push`       | Push schema directly to database |
+| `bun run db:studio`     | Open Drizzle Studio              |
+| `bun run auth:generate` | Regenerate Better Auth schema    |
 
 ## Project Structure
 
@@ -128,10 +136,21 @@ See the [Better Auth docs](https://www.better-auth.com/) for adding OAuth provid
 Drizzle ORM is configured with PostgreSQL. Write schemas in `src/db/schema.ts`.
 
 ```bash
-bun run db:generate  # Generate migration files
-bun run db:migrate   # Apply migrations
-bun run db:studio    # Visual database browser
+docker compose up -d  # Start PostgreSQL
+bun run db:generate   # Generate migration files
+bun run db:migrate    # Apply migrations
+bun run db:studio     # Visual database browser
 ```
+
+## Pre-commit Hook
+
+A Husky pre-commit hook runs automatically on `git commit`:
+
+1. **Type-check** — `tsc --noEmit` (fails fast on type errors)
+2. **Lint** — `eslint --fix` on staged `*.ts(x)` files (blocks on unfixable errors)
+3. **Format** — `prettier --write` on all staged files
+
+Fixed files are automatically re-staged. Install hooks after cloning with `bun install` (runs `husky` via the `prepare` script).
 
 ## Recommended Libraries
 
