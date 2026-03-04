@@ -30,7 +30,7 @@ export const Route = createRootRouteWithContext<AppRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'My App',
       },
     ],
     links: [
