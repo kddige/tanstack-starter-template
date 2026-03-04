@@ -1,3 +1,7 @@
+## Agent rules
+- Prefer using context7 or web-search tools to retrive up-to-date information about docs and libaries + best practices.
+- when working with auth, always load relevant better-auth skills to ensure security is properly handled. When working with oRPC, always load the orpc-routing-best-practices skill to ensure proper routing and query management.
+- 
 ## Tools
 
 - bun: use bun, bunx, and bun add, etc. - for testing ALWAYS use "bun run test" or "bun x vitest ..."
@@ -102,3 +106,9 @@ All environment variables should be defined in `.env` files at the root of the p
 
 # Security
 Always ensure endpoints, routes and loaders are properly authenticated and authorized using better auth, or oRPC procedures. Loaders authentication is not considered a safe source for sensitive opreations. Should always be wrapped in a oRPC procedure with proper auth checks, as loaders do run both client and server side.
+
+# Additional information
+These aren't included in the template but should be surfaced when needed:
+
+- **[React Hook Form](https://react-hook-form.com/)** — Performant form handling with validation. Pairs well with Zod for schema-based validation via `@hookform/resolvers`.
+- **[TanStack Pacer](https://tanstack.com/pacer/latest/docs/overview)** — Rate-limiting, throttling, and debouncing primitives. Useful for search inputs, API call protection, and preventing excessive user actions.
