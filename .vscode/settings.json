@@ -1,6 +1,5 @@
 {
-  "typescript.preferences.importModuleSpecifierEnding": "minimal",
-  "javascript.preferences.importModuleSpecifierEnding": "minimal",
+  "js/ts.preferences.importModuleSpecifierEnding": "minimal",
   "files.watcherExclude": {
     "**/routeTree.gen.ts": true
   },

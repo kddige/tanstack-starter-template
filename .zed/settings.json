@@ -1,13 +1,13 @@
 {
   "languages": {
     "TypeScript": {
-      "language_servers": ["tsgo"],
+      "language_servers": ["vtsls"],
     },
     "TSX": {
-      "language_servers": ["tsgo"],
+      "language_servers": ["vtsls"],
     },
     "JavaScript": {
-      "language_servers": ["tsgo"],
+      "language_servers": ["vtsls"],
     },
   },
 }
