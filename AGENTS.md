@@ -1,13 +1,11 @@
-Project uses typescript-go. Replace "tsc" with "tsgo" in any usage. example: "bun x tsgo --noEmit"
 
 
----
 ## Agent rules
 - Prefer using web-search tools if availabe to retrive up-to-date information about docs and libaries + best practices.
 - when working with auth, always load relevant better-auth skills to ensure security is properly handled. When working with oRPC, always load the orpc-routing-best-practices skill to ensure proper routing and query management.
-- 
-## Tools
 
+## Tools
+- typescirpt: the project uses typescript-go (Typescript 7.0 Beta). Replace "tsc" with "tsgo" in any usage. example: ```bun x tsgo --noEmit```
 - bun: use bun, bunx, and bun add, etc. - for testing ALWAYS use "bun run test" or "bun x vitest ..."
 - environment: node <- not yet bun runtime ready..
 
