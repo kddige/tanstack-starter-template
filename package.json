@@ -1,5 +1,5 @@
 {
-  "name": "hucomm-app",
+  "name": "tanstack-starter-template",
   "private": true,
   "type": "module",
   "imports": {

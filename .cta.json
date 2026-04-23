@@ -1,5 +1,5 @@
 {
-  "projectName": "hucomm-app",
+  "projectName": "tanstack-starter-template",
   "mode": "file-router",
   "typescript": true,
   "packageManager": "bun",
@@ -12,8 +12,5 @@
   "routerOnly": false,
   "version": 1,
   "framework": "react",
-  "chosenAddOns": [
-    "eslint",
-    "railway"
-  ]
+  "chosenAddOns": ["eslint", "railway"]
 }

@@ -4,6 +4,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import { ReactQueryDevtoolsPanel as TanstackReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
 import appCss from '../styles.css?url'
 import { TooltipProvider } from '#/components/ui/tooltip'
+import { env } from '#/env'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -16,7 +17,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'Hucomm',
+        title: env.VITE_APP_TITLE ?? 'Tanstack Starter Template',
       },
     ],
     links: [
