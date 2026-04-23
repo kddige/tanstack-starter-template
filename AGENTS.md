@@ -1,10 +1,10 @@
-
-
 ## Agent rules
+
 - Prefer using web-search tools if availabe to retrive up-to-date information about docs and libaries + best practices.
 - when working with auth, always load relevant better-auth skills to ensure security is properly handled. When working with oRPC, always load the orpc-routing-best-practices skill to ensure proper routing and query management.
 
 ## Tools
+
 - bun: use bun, bunx, and bun add, etc. - for testing ALWAYS use "bun run test" or "bun x vitest ..."
 - environment: node <- not yet bun runtime ready..
 
@@ -94,10 +94,13 @@ queryClient.setQueryData(
   updatedData,
 )
 ```
+
 ### oRPC routing
+
 When working with oRPC routing ALWAYS use the [orpc-routing-best-practices] skill! MANDATORY for all oRPC routing work.
 
 # Database setup
+
 ORM is Drizzle. Write all schemas in `src/db/schema.ts`.
 
 **After any schema change, always generate and use migrations** — never use `db:push` for production-bound changes. Migrations ensure data is transformed correctly when applied in production environments.
@@ -112,17 +115,21 @@ Use `bun run db:push` only for rapid local prototyping where data loss is accept
 When changing auth options, or extending the better auth instance run `bun run auth:generate` to regenerate the better-auth auth-schema.ts
 
 # Environment variables
+
 All environment variables should be defined in `.env` files at the root of the project. Use the 'src/env.ts' to parse and export environment variables for use throughout the application. Uses t3-env under the hood. Ensures no credentials leaks into the client bundle <- but not guranteed. Always verify when working with sensitive enviroment data
 
 # Security
+
 Always ensure endpoints, routes and loaders are properly authenticated and authorized using better auth, or oRPC procedures. Loaders authentication is not considered a safe source for sensitive opreations. Should always be wrapped in a oRPC procedure with proper auth checks, as loaders do run both client and server side.
 
 # Client vs Server
+
 tanstack automatically discards any file from being bundled in client vs server, if using .client.ts (only importable on the client) or .server.ts (only importable on the server) - or if files are located in a "server" folder (only importable on the server).
 
 For files that can exists on both client vs server, dont include a suffix.
 
 # Additional information
+
 These aren't included in the template but should be surfaced when needed:
 
 - **[React Hook Form](https://react-hook-form.com/)** — Performant form handling with validation. Pairs well with Zod for schema-based validation via `@hookform/resolvers`.

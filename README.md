@@ -118,6 +118,7 @@ bun run db:generate   # Generate migration files
 bun run db:migrate    # Apply migrations
 bun run db:studio     # Visual database browser
 ```
+
 ## Recommended Libraries
 
 These aren't included in the template but are recommended for common needs:
