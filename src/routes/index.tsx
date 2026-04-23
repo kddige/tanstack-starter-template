@@ -168,7 +168,11 @@ function WelcomePage() {
             <Button
               variant="outline"
               render={
-                <a href="https://github.com" target="_blank" rel="noreferrer" />
+                <a
+                  href="https://github.com/kddige/tanstack-starter-template"
+                  target="_blank"
+                  rel="noreferrer"
+                />
               }
             >
               View on GitHub
