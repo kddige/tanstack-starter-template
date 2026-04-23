@@ -18,7 +18,8 @@
     "auth:generate": "bun x auth generate --config ./src/server/lib/auth.ts --output ./src/server/lib/db/schemas/auth-schema.ts -y",
     "db:generate": "bunx drizzle-kit generate",
     "db:migrate": "bunx drizzle-kit migrate",
-    "db:push": "bunx drizzle-kit push"
+    "db:push": "bunx drizzle-kit push",
+    "db:studio": "bunx drizzle-kit studio"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

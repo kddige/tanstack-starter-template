@@ -1,204 +1,138 @@
-Welcome to your new TanStack Start app! 
+# TanStack Start Template
 
-# Getting Started
+An opinionated full-stack starter template built on [TanStack Start](https://tanstack.com/start) with authentication, database, type-safe API, and UI components pre-configured.
 
-To run this application:
+## Tech Stack
+
+- **Framework:** [TanStack Start](https://tanstack.com/start) (React 19, SSR, file-based routing)
+- **API:** [oRPC](https://orpc.unnoq.com/) (type-safe RPC with TanStack Query integration)
+- **Auth:** [Better Auth](https://www.better-auth.com/) (email/password, session management)
+- **Database:** [Drizzle ORM](https://orm.drizzle.team/) + PostgreSQL
+- **UI:** [shadcn/ui](https://ui.shadcn.com/) + [Tailwind CSS v4](https://tailwindcss.com/)
+- **Validation:** [Zod](https://zod.dev/) + [t3-env](https://env.t3.gg/) for type-safe env vars
+- **Testing:** [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/)
+- **Tooling:** ESLint, Prettier, TypeScript
+
+## Quick Start
+
+### 1. Clone & install
 
 ```bash
+bunx degit kddige/tanstack-starter-template my-app
+cd my-app
 bun install
-bun --bun run dev
 ```
 
-# Building For Production
-
-To build this application for production:
+### 2. Configure environment
 
 ```bash
-bun --bun run build
+cp .env.example .env.local
 ```
 
-## Testing
-
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+Edit `.env.local` with your values:
 
 ```bash
-bun --bun run test
+# Generate auth secret
+bunx --bun @better-auth/cli secret
+
+# Set your database URL
+DATABASE_URL="postgresql://username:password@localhost:5432/mydb"
 ```
 
-## Styling
+### 3. Start PostgreSQL
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-### Removing Tailwind CSS
-
-If you prefer not to use Tailwind CSS:
-
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `bun install @tailwindcss/vite tailwindcss -D`
-
-## Linting & Formatting
-
-
-This project uses [eslint](https://eslint.org/) and [prettier](https://prettier.io/) for linting and formatting. Eslint is configured using [tanstack/eslint-config](https://tanstack.com/config/latest/docs/eslint). The following scripts are available:
+A `docker-compose.yml` is included with a PostgreSQL instance matching the default `.env.example` connection string.
 
 ```bash
-bun --bun run lint
-bun --bun run format
-bun --bun run check
+docker compose up -d
 ```
 
+### 4. Set up database
 
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
+```bash
+bun run db:push    # Push schema to database (local dev)
+# or
+bun run db:migrate # Run migrations (production)
 ```
 
-Then anywhere in your JSX you can use it like so:
+### 5. Start developing
 
-```tsx
-<Link to="/about">About</Link>
+```bash
+bun run dev
 ```
 
-This will create a link that will navigate to the `/about` route.
+Open [http://localhost:3000](http://localhost:3000).
 
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
+## Scripts
 
-### Using A Layout
+| Script                  | Description                      |
+| ----------------------- | -------------------------------- |
+| `bun run dev`           | Start dev server on port 3000    |
+| `bun run build`         | Production build                 |
+| `bun run preview`       | Preview production build         |
+| `bun run test`          | Run tests with Vitest            |
+| `bun run lint`          | Lint with ESLint                 |
+| `bun run format`        | Check formatting with Prettier   |
+| `bun run check`         | Fix formatting + lint            |
+| `bun run db:generate`   | Generate Drizzle migrations      |
+| `bun run db:migrate`    | Run Drizzle migrations           |
+| `bun run db:push`       | Push schema directly to database |
+| `bun run db:studio`     | Open Drizzle Studio              |
+| `bun run auth:generate` | Regenerate Better Auth schema    |
 
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
+## Environment Variables
 
-Here is an example layout that includes a header:
+All env vars are validated at runtime through `src/env.ts` using `@t3-oss/env-core`. Add new variables there before using them.
 
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+```ts
+import { env } from '#/env'
 
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
+// Server-side
+env.DATABASE_URL
+env.BETTER_AUTH_SECRET
+env.BETTER_AUTH_URL
+
+// Client-side (must be prefixed with VITE_)
+env.VITE_APP_TITLE
 ```
 
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
+## Authentication
 
-## Server Functions
+Better Auth is configured with email/password authentication and Drizzle as the database adapter. The auth server is in `src/lib/auth.ts` and the client in `src/lib/auth-client.ts`.
 
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
+After modifying auth config, regenerate the schema:
 
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
+```bash
+bun run auth:generate
 ```
 
-## API Routes
+See the [Better Auth docs](https://www.better-auth.com/) for adding OAuth providers, 2FA, and more.
 
-You can create API routes by using the `server` property in your route definitions:
+## Database
 
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
+Drizzle ORM is configured with PostgreSQL. Write schemas in `src/db/schema.ts`.
 
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
+```bash
+docker compose up -d  # Start PostgreSQL
+bun run db:generate   # Generate migration files
+bun run db:migrate    # Apply migrations
+bun run db:studio     # Visual database browser
 ```
+## Recommended Libraries
 
-## Data Fetching
+These aren't included in the template but are recommended for common needs:
 
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
+- **[React Hook Form](https://react-hook-form.com/)** — Performant form handling with validation. Pairs well with Zod for schema-based validation via `@hookform/resolvers`.
+- **[TanStack Pacer](https://tanstack.com/pacer/latest/docs/overview)** — Rate-limiting, throttling, and debouncing primitives. Useful for search inputs, API call protection, and preventing excessive user actions.
 
-For example:
+## Learn More
 
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
+- [TanStack Start docs](https://tanstack.com/start)
+- [oRPC docs](https://orpc.unnoq.com/)
+- [Better Auth docs](https://www.better-auth.com/)
+- [Drizzle ORM docs](https://orm.drizzle.team/)
+- [shadcn/ui docs](https://ui.shadcn.com/)
 
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
+## License
 
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+MIT
