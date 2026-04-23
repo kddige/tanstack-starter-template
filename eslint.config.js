@@ -15,6 +15,22 @@ export default [
     },
   },
   {
-    ignores: ['eslint.config.js', 'prettier.config.js'],
+    ignores: [
+      '.output/**',
+      '.tanstack/**',
+      'dist/**',
+      'dist-ssr/**',
+      'node_modules/**',
+      'src/routeTree.gen.ts',
+      'eslint.config.js',
+      'prettier.config.js',
+    ],
+  },
+  {
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+      'no-shadow': 'off',
+    },
   },
 ]

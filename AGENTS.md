@@ -1,25 +1,24 @@
 ## Agent rules
 
-- Prefer using web-search tools if availabe to retrive up-to-date information about docs and libaries + best practices.
-- when working with auth, always load relevant better-auth skills to ensure security is properly handled. When working with oRPC, always load the orpc-routing-best-practices skill to ensure proper routing and query management.
+- Prefer web-search tools, when available, to retrieve up-to-date documentation, library guidance, and best practices.
+- When working with auth, always load the relevant Better Auth skills to ensure security is handled properly.
+- When working with oRPC routing, always load the `orpc-routing-best-practices` skill to ensure proper routing and query management.
 
 ## Tools
 
-- bun: use bun, bunx, and bun add, etc. - for testing ALWAYS use "bun run test" or "bun x vitest ..."
-- environment: node <- not yet bun runtime ready..
+- Package manager/runtime: use Bun commands (`bun`, `bunx`, `bun add`, etc.).
+- Test commands: always use `bun run test` or `bun x vitest ...`.
+- Runtime target: Node.js. Do not assume the app is ready for Bun runtime deployment.
 
 ## Code Style
 
-NEVER use `as` casting for types (except `as const`, which is allowed). Instead use type guards, type assertions, or other TypeScript features to ensure type safety without bypassing the type system. This promotes better code quality and maintainability.
+Avoid `as` casting in application code, except `as const`, which is allowed. Prefer type guards, assertions through validated schemas, or other TypeScript features that preserve type safety. Generated or vendor-style shadcn/ui components may contain casts; avoid adding new casts there unless there is no safer alternative.
 
-Always write JSDoc comments for all exported functions, classes, and constants.
-Include `@example` blocks with realistic usage, `{@link}` references to related symbols, and any relevant tags (`@param`, `@returns`, `@throws`).
-JSDoc should be concise but informative — prioritize clarity over verbosity. Remember to update JSDoc comments when making changes to reflect any changes in functionality or behavior to keep documentation accurate and helpful for users and maintainers.
+Add JSDoc comments for exported application-level utilities, server procedures, public APIs, classes, and constants. Generated UI components and route definitions do not require exhaustive JSDoc. Include concise `@example` blocks, useful `{@link}` references, and relevant tags (`@param`, `@returns`, `@throws`) when they improve clarity. Update JSDoc when behavior changes.
 
 ## Testing
 
-Always write or update tests first, then implement the corresponding functionality. Use RED/GREEN/REFACTOR cycles to ensure that tests drive development and that code is well-structured and maintainable.
-Tests should be comprehensive, covering edge cases and potential failure modes. Use descriptive test names that clearly indicate the behavior being tested. Aim for high code coverage, but prioritize meaningful tests over achieving 100
+Write or update tests first, then implement the corresponding functionality. Use RED/GREEN/REFACTOR cycles where practical. Tests should cover edge cases and likely failure modes. Use descriptive test names and prioritize meaningful coverage over chasing 100% coverage.
 
 ### Unit Tests
 
@@ -29,9 +28,9 @@ Unit tests are located in `src/**/*.test.ts` files and run with Vitest.
 bun run test
 ```
 
-# oRPC FRONTEND USAGE GUIDE
+# oRPC Frontend Usage Guide
 
-**Do NOT create custom hooks for queries.** Always use queries and mutations directly in components:
+**Do not create custom hooks for queries.** Always use queries and mutations directly in components:
 
 ```tsx
 // Queries
@@ -41,7 +40,7 @@ useQuery(orpc.example.get.queryOptions({ input: { id: exampleId } }))
 // Mutations
 useMutation(orpc.example.add.mutationOptions())
 
-// Event streaming (real-time updates from main process)
+// Event streaming (real-time updates from the server)
 useQuery(
   orpc.some.sse.rpc.experimental_streamedOptions({
     queryFnOptions: { refetchMode: 'replace' },
@@ -51,24 +50,23 @@ useQuery(
 
 ### oRPC query key helpers
 
-oRPC generates type-safe query keys automatically. **Never use raw string arrays** like `{ queryKey: ['container'] }` — always use the `.key()` helpers from the `orpc` utils object.
+oRPC generates type-safe query keys automatically. **Never use raw string arrays** like `{ queryKey: ['container'] }`. Always use the `.key()` helpers from the `orpc` utils object.
 
 ```tsx
-import { orpc } from '@/lib/orpc'
+import { orpc } from '#/lib/rpc'
 
-// .key() — broad "partial matching" key for invalidating an entire router/procedure family
+// .key() — broad partial-matching key for invalidating an entire router/procedure family
 orpc.example.key() // all example.* queries
-orpc.system.key() // all system.* queries
-orpc.example.key({ type: 'query' }) // only query-type (excludes mutations)
+orpc.example.key({ type: 'query' }) // only query-type entries, excluding mutations
 
 // .key() with input — narrow to a specific input
-orpc.example.inspect.key({ input: { id: '123' } })
+orpc.example.get.key({ input: { id: '123' } })
 
-// .queryKey() — "full matching" key for a specific query (use with setQueryData)
-orpc.example.inspect.queryKey({ input: { id: '123' } })
+// .queryKey() — full matching key for a specific query; useful with setQueryData
+orpc.example.get.queryKey({ input: { id: '123' } })
 
 // .mutationKey() — full matching key for mutations
-orpc.example.restart.mutationKey()
+orpc.example.add.mutationKey()
 ```
 
 **Invalidation examples:**
@@ -76,57 +74,53 @@ orpc.example.restart.mutationKey()
 ```tsx
 const queryClient = useQueryClient()
 
-// After a mutation, invalidate related queries:
-const restartMutation = useMutation({
-  ...orpc.example.restart.mutationOptions(),
+const addMutation = useMutation({
+  ...orpc.example.add.mutationOptions(),
   onSuccess: () => {
-    // Invalidate all example queries (list, inspect, logs, etc.)
     queryClient.invalidateQueries({ queryKey: orpc.example.key() })
   },
 })
 
-// Invalidate a specific procedure's queries:
-queryClient.invalidateQueries({ queryKey: orpc.system.setupStatus.key() })
+queryClient.invalidateQueries({ queryKey: orpc.example.key({ type: 'query' }) })
 
-// Direct cache update (optimistic or post-mutation):
 queryClient.setQueryData(
-  orpc.example.inspect.queryKey({ input: { id: '123' } }),
+  orpc.example.get.queryKey({ input: { id: '123' } }),
   updatedData,
 )
 ```
 
 ### oRPC routing
 
-When working with oRPC routing ALWAYS use the [orpc-routing-best-practices] skill! MANDATORY for all oRPC routing work.
+When working with oRPC routing, always use the `orpc-routing-best-practices` skill. This is mandatory for all oRPC routing work.
 
 # Database setup
 
-ORM is Drizzle. Write all schemas in `src/db/schema.ts`.
+ORM is Drizzle. Write application schemas in `src/server/lib/db/schemas/app-schema.ts`. Better Auth generated schemas live in `src/server/lib/db/schemas/auth-schema.ts`.
 
-**After any schema change, always generate and use migrations** — never use `db:push` for production-bound changes. Migrations ensure data is transformed correctly when applied in production environments.
+**After any production-bound schema change, always generate and use migrations** — never use `db:push` for production-bound changes. Migrations ensure data is transformed correctly when applied in production environments.
 
-1. Modify `src/server/lib/db/schemas/app-schema.ts`
-2. Run `bun run db:generate` to create a migration file
-3. Review the generated SQL in `drizzle/` for correctness (especially for column renames, type changes, or data-loss-prone operations)
-4. Run `bun run db:migrate` to apply
+1. Modify `src/server/lib/db/schemas/app-schema.ts`.
+2. Run `bun run db:generate` to create a migration file.
+3. Review the generated SQL in `drizzle/` for correctness, especially for column renames, type changes, or data-loss-prone operations.
+4. Run `bun run db:migrate` to apply the migration.
 
 Use `bun run db:push` only for rapid local prototyping where data loss is acceptable.
 
-When changing auth options, or extending the better auth instance run `bun run auth:generate` to regenerate the better-auth auth-schema.ts
+When changing auth options or extending the Better Auth instance, run `bun run auth:generate` to regenerate `src/server/lib/db/schemas/auth-schema.ts`.
 
 # Environment variables
 
-All environment variables should be defined in `.env` files at the root of the project. Use the 'src/env.ts' to parse and export environment variables for use throughout the application. Uses t3-env under the hood. Ensures no credentials leaks into the client bundle <- but not guranteed. Always verify when working with sensitive enviroment data
+All environment variables should be defined in root `.env` files. Use `src/env.ts` to parse and export environment variables throughout the application. This project uses `@t3-oss/env-core` to prevent accidental client-side access to server-only variables, but always verify sensitive environment data is not exposed to the client bundle.
 
 # Security
 
-Always ensure endpoints, routes and loaders are properly authenticated and authorized using better auth, or oRPC procedures. Loaders authentication is not considered a safe source for sensitive opreations. Should always be wrapped in a oRPC procedure with proper auth checks, as loaders do run both client and server side.
+Ensure endpoints, routes, and loaders are properly authenticated and authorized using Better Auth or oRPC procedures. Loader authentication is not a safe source for sensitive operations. Sensitive operations should always be wrapped in an oRPC procedure with proper auth checks because loaders may run on both client and server.
 
 # Client vs Server
 
-tanstack automatically discards any file from being bundled in client vs server, if using .client.ts (only importable on the client) or .server.ts (only importable on the server) - or if files are located in a "server" folder (only importable on the server).
+TanStack Start automatically prevents server files from being bundled into the client when using `.server.ts`, files in a `server` folder, or configured import protection. Use `.client.ts` only for files that must be client-only.
 
-For files that can exists on both client vs server, dont include a suffix.
+For files that can exist on both client and server, do not include a suffix.
 
 # Additional information
 

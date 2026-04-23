@@ -6,7 +6,9 @@ afterEach(() => {
   cleanup()
 })
 
+declare global {
+  var IS_REACT_ACT_ENVIRONMENT: boolean | undefined
+}
+
 // TanStack Router's testing docs recommend enabling the React act environment.
-;(
-  globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }
-).IS_REACT_ACT_ENVIRONMENT = true
+globalThis.IS_REACT_ACT_ENVIRONMENT = true

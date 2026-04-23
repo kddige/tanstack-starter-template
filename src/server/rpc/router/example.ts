@@ -1,11 +1,16 @@
 import z from 'zod'
 import { publicProcedure } from '../procedures'
 
+// Demo-only in-memory store. Replace with database-backed storage in production.
 const messages: string[] = []
 
 export const exampleRouter = publicProcedure.tag('Example').router({
   getMessages: publicProcedure
-    .route({ method: 'GET', description: 'Returns posted messages' })
+    .route({
+      method: 'GET',
+      path: '/messages',
+      description: 'Returns posted messages',
+    })
     .output(
       z.object({
         messages: z.array(z.string()).describe('The messages'),
@@ -21,6 +26,8 @@ export const exampleRouter = publicProcedure.tag('Example').router({
   postMessage: publicProcedure
     .route({
       method: 'POST',
+      path: '/messages',
+      successStatus: 201,
       description: 'Posts a message',
     })
     .input(

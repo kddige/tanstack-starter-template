@@ -72,7 +72,7 @@ const TECH_STACK = [
       {
         name: 'oRPC',
         description: 'End-to-end type-safe APIs',
-        href: 'https://orpc.io',
+        href: 'https://orpc.dev',
       },
       {
         name: 'Better Auth',
