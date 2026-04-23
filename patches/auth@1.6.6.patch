@@ -1,0 +1,206 @@
+diff --git a/dist/api.mjs b/dist/api.mjs
+index 4a195359db10c60b30a462af27b28c1f54364e67..6ab1c31e66dc060704573f4d995a318824603d9a 100644
+--- a/dist/api.mjs
++++ b/dist/api.mjs
+@@ -146,7 +146,7 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 					}${assignIndexes(indexes)});`;
+ 		code += `\n${schema}\n`;
+ 	}
+-	let relationsString = "";
++	const relationObjects = [];
+ 	for (const tableKey in tables) {
+ 		const table = tables[tableKey];
+ 		const modelName = getModelName(tableKey);
+@@ -157,11 +157,11 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 		for (const [fieldName, field] of foreignFields) {
+ 			const referencedModel = field.references.model;
+ 			const relationKey = getModelName(referencedModel);
+-			const fieldRef = `${getModelName(tableKey)}.${getFieldName({
++			const fieldRef = `r.${getModelName(tableKey)}.${getFieldName({
+ 				model: tableKey,
+ 				field: fieldName
+ 			})}`;
+-			const referenceRef = `${getModelName(referencedModel)}.${getFieldName({
++			const referenceRef = `r.${getModelName(referencedModel)}.${getFieldName({
+ 				model: referencedModel,
+ 				field: field.references.field || "id"
+ 			})}`;
+@@ -169,6 +169,7 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 				key: relationKey,
+ 				model: getModelName(referencedModel),
+ 				type: "one",
++				required: field.required !== false,
+ 				reference: {
+ 					field: fieldRef,
+ 					references: referenceRef,
+@@ -212,43 +213,25 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 		const singleRelations = [];
+ 		for (const [_modelKey, relations] of relationsByModel.entries()) if (relations.length > 1) duplicateRelations.push(...relations);
+ 		else singleRelations.push(relations[0]);
++		const relationEntries = [];
+ 		for (const relation of duplicateRelations) if (relation.reference) {
+ 			const fieldName = relation.reference.fieldName;
+-			const tableRelation = `export const ${`${modelName}${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}Relations`} = relations(${getModelName(table.modelName)}, ({ one }) => ({
+-				${relation.key}: one(${relation.model}, {
+-					fields: [${relation.reference.field}],
+-					references: [${relation.reference.references}],
+-				})
+-			}))`;
+-			relationsString += `\n${tableRelation}\n`;
+-		}
+-		const hasOne = singleRelations.length > 0;
+-		const hasMany = manyRelations.length > 0;
+-		if (hasOne && hasMany) {
+-			const tableRelation = `export const ${modelName}Relations = relations(${getModelName(table.modelName)}, ({ one, many }) => ({
+-				${singleRelations.map((relation) => relation.reference ? ` ${relation.key}: one(${relation.model}, {
+-					fields: [${relation.reference.field}],
+-					references: [${relation.reference.references}],
+-				})` : "").filter((x) => x !== "").join(",\n ")}${singleRelations.length > 0 && manyRelations.length > 0 ? "," : ""}
+-				${manyRelations.map(({ key, model }) => ` ${key}: many(${model})`).join(",\n ")}
+-			}))`;
+-			relationsString += `\n${tableRelation}\n`;
+-		} else if (hasOne) {
+-			const tableRelation = `export const ${modelName}Relations = relations(${getModelName(table.modelName)}, ({ one }) => ({
+-				${singleRelations.map((relation) => relation.reference ? ` ${relation.key}: one(${relation.model}, {
+-					fields: [${relation.reference.field}],
+-					references: [${relation.reference.references}],
+-				})` : "").filter((x) => x !== "").join(",\n ")}
+-			}))`;
+-			relationsString += `\n${tableRelation}\n`;
+-		} else if (hasMany) {
+-			const tableRelation = `export const ${modelName}Relations = relations(${getModelName(table.modelName)}, ({ many }) => ({
+-				${manyRelations.map(({ key, model }) => ` ${key}: many(${model})`).join(",\n ")}
+-			}))`;
+-			relationsString += `\n${tableRelation}\n`;
++			relationEntries.push(`${relation.key}: r.one.${relation.model}({
++				from: ${relation.reference.field},
++				to: ${relation.reference.references},${relation.required ? "\n\t\t\t\toptional: false," : ""}
++				alias: "${modelName}_${fieldName}",
++			})`);
+ 		}
++		for (const relation of singleRelations) if (relation.reference) relationEntries.push(`${relation.key}: r.one.${relation.model}({
++			from: ${relation.reference.field},
++			to: ${relation.reference.references},${relation.required ? "\n\t\t\toptional: false," : ""}
++		})`);
++		for (const { key, model } of manyRelations) relationEntries.push(`${key}: r.many.${model}()`);
++		if (relationEntries.length > 0) relationObjects.push(`\t${modelName}: {\n\t\t${relationEntries.join(",\n\t\t")}\n\t}`);
+ 	}
+-	code += `\n${relationsString}`;
++	const schemaObject = `const authSchema = {\n\t${Object.keys(tables).map((tableKey) => getModelName(tableKey)).join(",\n\t")}\n};`;
++	const relationsString = `export const authRelations = defineRelationsPart(authSchema, (r) => ({\n${relationObjects.join(",\n")}\n}));`;
++	code += `\n${schemaObject}\n\n${relationsString}`;
+ 	return {
+ 		code: await prettier.format(code, { parser: "typescript" }),
+ 		fileName: filePath,
+@@ -256,7 +239,7 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 	};
+ };
+ function generateImport({ databaseType, tables, options }) {
+-	const rootImports = ["relations"];
++	const rootImports = ["defineRelationsPart"];
+ 	const coreImports = [];
+ 	let hasBigint = false;
+ 	let hasJson = false;
+diff --git a/dist/index.mjs b/dist/index.mjs
+index aa883f170c5cc3c9ac9703f3f0778cf733d02454..56cc385fee747e81b286d0ab35eff9898e6fdaaf 100755
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -716,7 +716,7 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 					}${assignIndexes(indexes)});`;
+ 		code += `\n${schema}\n`;
+ 	}
+-	let relationsString = "";
++	const relationObjects = [];
+ 	for (const tableKey in tables) {
+ 		const table = tables[tableKey];
+ 		const modelName = getModelName(tableKey);
+@@ -727,11 +727,11 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 		for (const [fieldName, field] of foreignFields) {
+ 			const referencedModel = field.references.model;
+ 			const relationKey = getModelName(referencedModel);
+-			const fieldRef = `${getModelName(tableKey)}.${getFieldName({
++			const fieldRef = `r.${getModelName(tableKey)}.${getFieldName({
+ 				model: tableKey,
+ 				field: fieldName
+ 			})}`;
+-			const referenceRef = `${getModelName(referencedModel)}.${getFieldName({
++			const referenceRef = `r.${getModelName(referencedModel)}.${getFieldName({
+ 				model: referencedModel,
+ 				field: field.references.field || "id"
+ 			})}`;
+@@ -739,6 +739,7 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 				key: relationKey,
+ 				model: getModelName(referencedModel),
+ 				type: "one",
++				required: field.required !== false,
+ 				reference: {
+ 					field: fieldRef,
+ 					references: referenceRef,
+@@ -782,43 +783,25 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 		const singleRelations = [];
+ 		for (const [_modelKey, relations] of relationsByModel.entries()) if (relations.length > 1) duplicateRelations.push(...relations);
+ 		else singleRelations.push(relations[0]);
++		const relationEntries = [];
+ 		for (const relation of duplicateRelations) if (relation.reference) {
+ 			const fieldName = relation.reference.fieldName;
+-			const tableRelation = `export const ${`${modelName}${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}Relations`} = relations(${getModelName(table.modelName)}, ({ one }) => ({
+-				${relation.key}: one(${relation.model}, {
+-					fields: [${relation.reference.field}],
+-					references: [${relation.reference.references}],
+-				})
+-			}))`;
+-			relationsString += `\n${tableRelation}\n`;
+-		}
+-		const hasOne = singleRelations.length > 0;
+-		const hasMany = manyRelations.length > 0;
+-		if (hasOne && hasMany) {
+-			const tableRelation = `export const ${modelName}Relations = relations(${getModelName(table.modelName)}, ({ one, many }) => ({
+-				${singleRelations.map((relation) => relation.reference ? ` ${relation.key}: one(${relation.model}, {
+-					fields: [${relation.reference.field}],
+-					references: [${relation.reference.references}],
+-				})` : "").filter((x) => x !== "").join(",\n ")}${singleRelations.length > 0 && manyRelations.length > 0 ? "," : ""}
+-				${manyRelations.map(({ key, model }) => ` ${key}: many(${model})`).join(",\n ")}
+-			}))`;
+-			relationsString += `\n${tableRelation}\n`;
+-		} else if (hasOne) {
+-			const tableRelation = `export const ${modelName}Relations = relations(${getModelName(table.modelName)}, ({ one }) => ({
+-				${singleRelations.map((relation) => relation.reference ? ` ${relation.key}: one(${relation.model}, {
+-					fields: [${relation.reference.field}],
+-					references: [${relation.reference.references}],
+-				})` : "").filter((x) => x !== "").join(",\n ")}
+-			}))`;
+-			relationsString += `\n${tableRelation}\n`;
+-		} else if (hasMany) {
+-			const tableRelation = `export const ${modelName}Relations = relations(${getModelName(table.modelName)}, ({ many }) => ({
+-				${manyRelations.map(({ key, model }) => ` ${key}: many(${model})`).join(",\n ")}
+-			}))`;
+-			relationsString += `\n${tableRelation}\n`;
++			relationEntries.push(`${relation.key}: r.one.${relation.model}({
++				from: ${relation.reference.field},
++				to: ${relation.reference.references},${relation.required ? "\n\t\t\t\toptional: false," : ""}
++				alias: "${modelName}_${fieldName}",
++			})`);
+ 		}
++		for (const relation of singleRelations) if (relation.reference) relationEntries.push(`${relation.key}: r.one.${relation.model}({
++			from: ${relation.reference.field},
++			to: ${relation.reference.references},${relation.required ? "\n\t\t\toptional: false," : ""}
++		})`);
++		for (const { key, model } of manyRelations) relationEntries.push(`${key}: r.many.${model}()`);
++		if (relationEntries.length > 0) relationObjects.push(`\t${modelName}: {\n\t\t${relationEntries.join(",\n\t\t")}\n\t}`);
+ 	}
+-	code += `\n${relationsString}`;
++	const schemaObject = `const authSchema = {\n\t${Object.keys(tables).map((tableKey) => getModelName(tableKey)).join(",\n\t")}\n};`;
++	const relationsString = `export const authRelations = defineRelationsPart(authSchema, (r) => ({\n${relationObjects.join(",\n")}\n}));`;
++	code += `\n${schemaObject}\n\n${relationsString}`;
+ 	return {
+ 		code: await prettier.format(code, { parser: "typescript" }),
+ 		fileName: filePath,
+@@ -826,7 +809,7 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 	};
+ };
+ function generateImport({ databaseType, tables, options }) {
+-	const rootImports = ["relations"];
++	const rootImports = ["defineRelationsPart"];
+ 	const coreImports = [];
+ 	let hasBigint = false;
+ 	let hasJson = false;
