@@ -1,0 +1,169 @@
+diff --git a/dist/api.mjs b/dist/api.mjs
+index 8a9d8bab076c29a4471bd11d6ac5c71a9eb04b05..4a29006d4df6b077c4c090afbceee5a4dc14b80c 100644
+--- a/dist/api.mjs
++++ b/dist/api.mjs
+@@ -187,7 +187,7 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 					}${assignIndexes(indexes)});`;
+ 		code += `\n${schema}\n`;
+ 	}
+-	let relationsString = "";
++	const relationObjects = [];
+ 	for (const tableKey in tables) {
+ 		const table = tables[tableKey];
+ 		if (isMigrationDisabled(tableKey)) continue;
+@@ -213,11 +213,11 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 				relationKey = `${relationKey}_${suffix}`;
+ 			}
+ 			usedOneRelationKeys.add(relationKey);
+-			const fieldRef = `${getModelName(tableKey)}.${getFieldName({
++			const fieldRef = `r.${getModelName(tableKey)}.${getFieldName({
+ 				model: tableKey,
+ 				field: fieldName
+ 			})}`;
+-			const referenceRef = `${getModelName(referencedModel)}.${getFieldName({
++			const referenceRef = `r.${getModelName(referencedModel)}.${getFieldName({
+ 				model: referencedModel,
+ 				field: field.references.field || "id"
+ 			})}`;
+@@ -225,6 +225,7 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 				key: relationKey,
+ 				model: getModelName(referencedModel),
+ 				type: "one",
++				required: field.required !== false,
+ 				relationName: hasMultipleRelations ? `${getModelName(tableKey)}_${fieldName}` : void 0,
+ 				reference: {
+ 					field: fieldRef,
+@@ -250,29 +251,17 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 				});
+ 			}
+ 		}
+-		const hasForwardOne = oneRelations.length > 0;
+-		const hasReverseOne = manyRelations.some((relation) => relation.type === "one");
+-		const hasReverseMany = manyRelations.some((relation) => relation.type === "many");
+-		const hasOne = hasForwardOne || hasReverseOne;
+-		const hasMany = hasReverseMany;
+-		const renderOneRelation = (relation) => relation.reference ? ` ${relation.key}: one(${relation.model}, {
+-					fields: [${relation.reference.field}],
+-					references: [${relation.reference.references}],
+-					${relation.relationName ? `relationName: "${relation.relationName}",` : ""}
+-				})` : "";
+-		const renderReverseRelation = ({ key, model, type, relationName }) => {
+-			return ` ${key}: ${type === "one" ? "one" : "many"}(${model}${relationName ? `, { relationName: "${relationName}" }` : ""})`;
+-		};
+-		if (hasOne || hasMany) {
+-			const helpers = [hasOne ? "one" : null, hasMany ? "many" : null].filter(Boolean).join(", ");
+-			const relationEntries = [...oneRelations.map(renderOneRelation).filter((x) => x !== ""), ...manyRelations.map(renderReverseRelation)].join(",\n ");
+-			const tableRelation = `export const ${modelName}Relations = relations(${getModelName(table.modelName)}, ({ ${helpers} }) => ({
+-				${relationEntries}
+-			}))`;
+-			relationsString += `\n${tableRelation}\n`;
+-		}
++		const renderOneRelation = (relation) => relation.reference ? `${relation.key}: r.one.${relation.model}({
++			from: ${relation.reference.field},
++			to: ${relation.reference.references},${relation.required ? "\n\t\t\toptional: false," : ""}${relation.relationName ? `\n\t\t\talias: "${relation.relationName}",` : ""}
++		})` : "";
++		const renderReverseRelation = ({ key, model, type, relationName }) => `${key}: r.${type === "one" ? "one" : "many"}.${model}(${relationName ? `{ alias: "${relationName}" }` : ""})`;
++		const relationEntries = [...oneRelations.map(renderOneRelation).filter((x) => x !== ""), ...manyRelations.map(renderReverseRelation)];
++		if (relationEntries.length > 0) relationObjects.push(`\t${modelName}: {\n\t\t${relationEntries.join(",\n\t\t")}\n\t}`);
+ 	}
+-	code += `\n${relationsString}`;
++	const schemaObject = `const authSchema = {\n\t${Object.keys(tables).filter((tableKey) => !isMigrationDisabled(tableKey)).map((tableKey) => getModelName(tableKey)).join(",\n\t")}\n};`;
++	const relationsString = `export const authRelations = defineRelationsPart(authSchema, (r) => ({\n${relationObjects.join(",\n")}\n}));`;
++	code += `\n${schemaObject}\n\n${relationsString}`;
+ 	return {
+ 		code: await prettier.format(code, { parser: "typescript" }),
+ 		fileName: filePath,
+@@ -280,7 +269,7 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 	};
+ };
+ function generateImport({ databaseType, tables, options, schemaName }) {
+-	const rootImports = ["relations"];
++	const rootImports = ["defineRelationsPart"];
+ 	const coreImports = [];
+ 	let hasBigint = false;
+ 	let hasJson = false;
+diff --git a/dist/index.mjs b/dist/index.mjs
+index d49d2f3c1bfd4bd5cef92cf680841e8963a39511..7503f519b2b915dac02ff6dcba88103e57b2029f 100755
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -1617,7 +1617,7 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 					}${assignIndexes(indexes)});`;
+ 		code += `\n${schema}\n`;
+ 	}
+-	let relationsString = "";
++	const relationObjects = [];
+ 	for (const tableKey in tables) {
+ 		const table = tables[tableKey];
+ 		if (isMigrationDisabled(tableKey)) continue;
+@@ -1643,11 +1643,11 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 				relationKey = `${relationKey}_${suffix}`;
+ 			}
+ 			usedOneRelationKeys.add(relationKey);
+-			const fieldRef = `${getModelName(tableKey)}.${getFieldName({
++			const fieldRef = `r.${getModelName(tableKey)}.${getFieldName({
+ 				model: tableKey,
+ 				field: fieldName
+ 			})}`;
+-			const referenceRef = `${getModelName(referencedModel)}.${getFieldName({
++			const referenceRef = `r.${getModelName(referencedModel)}.${getFieldName({
+ 				model: referencedModel,
+ 				field: field.references.field || "id"
+ 			})}`;
+@@ -1655,6 +1655,7 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 				key: relationKey,
+ 				model: getModelName(referencedModel),
+ 				type: "one",
++				required: field.required !== false,
+ 				relationName: hasMultipleRelations ? `${getModelName(tableKey)}_${fieldName}` : void 0,
+ 				reference: {
+ 					field: fieldRef,
+@@ -1680,29 +1681,17 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 				});
+ 			}
+ 		}
+-		const hasForwardOne = oneRelations.length > 0;
+-		const hasReverseOne = manyRelations.some((relation) => relation.type === "one");
+-		const hasReverseMany = manyRelations.some((relation) => relation.type === "many");
+-		const hasOne = hasForwardOne || hasReverseOne;
+-		const hasMany = hasReverseMany;
+-		const renderOneRelation = (relation) => relation.reference ? ` ${relation.key}: one(${relation.model}, {
+-					fields: [${relation.reference.field}],
+-					references: [${relation.reference.references}],
+-					${relation.relationName ? `relationName: "${relation.relationName}",` : ""}
+-				})` : "";
+-		const renderReverseRelation = ({ key, model, type, relationName }) => {
+-			return ` ${key}: ${type === "one" ? "one" : "many"}(${model}${relationName ? `, { relationName: "${relationName}" }` : ""})`;
+-		};
+-		if (hasOne || hasMany) {
+-			const helpers = [hasOne ? "one" : null, hasMany ? "many" : null].filter(Boolean).join(", ");
+-			const relationEntries = [...oneRelations.map(renderOneRelation).filter((x) => x !== ""), ...manyRelations.map(renderReverseRelation)].join(",\n ");
+-			const tableRelation = `export const ${modelName}Relations = relations(${getModelName(table.modelName)}, ({ ${helpers} }) => ({
+-				${relationEntries}
+-			}))`;
+-			relationsString += `\n${tableRelation}\n`;
+-		}
+-	}
+-	code += `\n${relationsString}`;
++		const renderOneRelation = (relation) => relation.reference ? `${relation.key}: r.one.${relation.model}({
++			from: ${relation.reference.field},
++			to: ${relation.reference.references},${relation.required ? "\n\t\t\toptional: false," : ""}${relation.relationName ? `\n\t\t\talias: "${relation.relationName}",` : ""}
++		})` : "";
++		const renderReverseRelation = ({ key, model, type, relationName }) => `${key}: r.${type === "one" ? "one" : "many"}.${model}(${relationName ? `{ alias: "${relationName}" }` : ""})`;
++		const relationEntries = [...oneRelations.map(renderOneRelation).filter((x) => x !== ""), ...manyRelations.map(renderReverseRelation)];
++		if (relationEntries.length > 0) relationObjects.push(`\t${modelName}: {\n\t\t${relationEntries.join(",\n\t\t")}\n\t}`);
++	}
++	const schemaObject = `const authSchema = {\n\t${Object.keys(tables).filter((tableKey) => !isMigrationDisabled(tableKey)).map((tableKey) => getModelName(tableKey)).join(",\n\t")}\n};`;
++	const relationsString = `export const authRelations = defineRelationsPart(authSchema, (r) => ({\n${relationObjects.join(",\n")}\n}));`;
++	code += `\n${schemaObject}\n\n${relationsString}`;
+ 	return {
+ 		code: await prettier.format(code, { parser: "typescript" }),
+ 		fileName: filePath,
+@@ -1710,7 +1699,7 @@ const generateDrizzleSchema = async ({ options, file, adapter }) => {
+ 	};
+ };
+ function generateImport({ databaseType, tables, options, schemaName }) {
+-	const rootImports = ["relations"];
++	const rootImports = ["defineRelationsPart"];
+ 	const coreImports = [];
+ 	let hasBigint = false;
+ 	let hasJson = false;
